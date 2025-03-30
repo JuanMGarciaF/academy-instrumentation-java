@@ -15,6 +15,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import reactor.core.publisher.Mono;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.StatusCode;
 
 @RestController
 public class PictureController {
@@ -48,6 +49,11 @@ public class PictureController {
             String imageUrl = v.getT2().getBody().getImageUrl();
             Span currentSpan = Span.current();
             currentSpan.setAttribute("app.phrase", phrase);
+            if (phrase.length() > 10) {
+                currentSpan.setStatus(StatusCode.ERROR);
+            } else {
+                currentSpan.setStatus(StatusCode.OK);
+            }
             currentSpan.setAttribute("app.imageUrl", imageUrl);
             logger.info("app.phrase=" + phrase + ", app.imageUrl=" + imageUrl);
 
