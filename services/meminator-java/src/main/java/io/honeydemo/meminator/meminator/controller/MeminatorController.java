@@ -20,7 +20,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
 import io.opentelemetry.instrumentation.annotations.WithSpan;
+
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
 
 @RestController
 public class MeminatorController {
@@ -29,6 +34,7 @@ public class MeminatorController {
     private static final int IMAGE_MAX_HEIGHT_PX = 1000;
 
     Logger logger = LogManager.getLogger("MeminatorController");
+    Tracer tracer = GlobalOpenTelemetry.getTracer("meminator-tracer");
 
     @SuppressWarnings("deprecation")
     @PostMapping("/applyPhraseToPicture")
@@ -36,12 +42,17 @@ public class MeminatorController {
         File inputFile = null;
         File outputFile = null;
 
+        Span span = tracer.spanBuilder("apply phrase").setNoParent().startSpan();
+
         try {
             String phrase = request.getPhrase();
             URL imageUrl = new URL(request.getImageUrl());
             
             String filename = new File(imageUrl.getPath()).getName();
             String fileExtension = getFileExtension(filename);
+
+            span.setAttribute("app.file_extension", fileExtension);
+
             // download the image using URL
             BufferedImage originalImage = ImageIO.read(imageUrl);
             inputFile = new File("/tmp/" + filename);
@@ -74,6 +85,7 @@ public class MeminatorController {
         } finally {
             if(inputFile != null) try { inputFile.delete(); } catch (Exception ide) { ide.printStackTrace(); }
             if(outputFile != null) try { outputFile.delete(); } catch (Exception ode) { ode.printStackTrace(); }
+            span.end();
         }
     }
 
