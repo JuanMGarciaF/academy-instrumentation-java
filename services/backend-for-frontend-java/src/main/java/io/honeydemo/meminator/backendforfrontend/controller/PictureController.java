@@ -14,6 +14,7 @@ import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import reactor.core.publisher.Mono;
+import io.opentelemetry.api.trace.Span;
 
 @RestController
 public class PictureController {
@@ -45,6 +46,9 @@ public class PictureController {
         var meme = bothResults.flatMap(v -> {
             String phrase = v.getT1().getBody().getPhrase();
             String imageUrl = v.getT2().getBody().getImageUrl();
+            Span currentSpan = Span.current();
+            currentSpan.setAttribute("app.phrase", phrase);
+            currentSpan.setAttribute("app.imageUrl", imageUrl);
             logger.info("app.phrase=" + phrase + ", app.imageUrl=" + imageUrl);
 
             return memeClient.post().uri("/applyPhraseToPicture").bodyValue(new MemeRequest(phrase, imageUrl))
