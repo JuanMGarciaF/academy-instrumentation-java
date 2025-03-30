@@ -44,7 +44,7 @@ public class MeminatorController {
         File outputFile = null;
         Span span=Span.current();
 
-        Span span = tracer.spanBuilder("apply phrase").setNoParent().startSpan();
+        //Span span = tracer.spanBuilder("apply phrase").setNoParent().startSpan();
 
         try {
             String phrase = request.getPhrase();
@@ -65,13 +65,15 @@ public class MeminatorController {
             outputFile = new File(outputFilePath);
 
             // run the convert command
-            span.addEvent(name:"Running conver command", Attributes.builder()
-            .put(key:"app.imageFile", value:"filename")
-            .put(key:"app.phrase", phrase)
-            .put(key:"app.outputFile", outputFilePath)
+            span.addEvent("Running convert command", Attributes.builder()
+            .put("app.imageFile", "filename")
+            .put("app.phrase", phrase)
+            .put("app.outputFile", outputFilePath)
             .build());
 
-            runConvertCommand(inputFile, phrase, outputFilePath);
+            //runConvertCommand(inputFile, phrase, outputFilePath);
+
+            runConvertCommand(new File("this does not exist"), phrase, outputFilePath);
 
             // read the output file back into the byte array
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -88,7 +90,11 @@ public class MeminatorController {
                     .body(imageBytes);
 
         } catch (Exception e) {
-            logger.error(e.getClass() + ": " +  e.getMessage() + ": " + e.getCause(), e);
+            //logger.error(e.getClass() + ": " +  e.getMessage() + ": " + e.getCause(), e);
+
+            span.recordException(e);
+            span.setStatus (StatusCode.ERROR, e.getMessage());
+
             return ResponseEntity.status(500).build();
         } finally {
             if(inputFile != null) try { inputFile.delete(); } catch (Exception ide) { ide.printStackTrace(); }
