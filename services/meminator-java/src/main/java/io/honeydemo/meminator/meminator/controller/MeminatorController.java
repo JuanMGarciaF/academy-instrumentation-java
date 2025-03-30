@@ -26,6 +26,7 @@ import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.common.Attributes;
 
 @RestController
 public class MeminatorController {
@@ -41,6 +42,7 @@ public class MeminatorController {
     public ResponseEntity<byte[]> meminate(@RequestBody ImageRequest request) {
         File inputFile = null;
         File outputFile = null;
+        Span span=Span.current();
 
         Span span = tracer.spanBuilder("apply phrase").setNoParent().startSpan();
 
@@ -63,6 +65,12 @@ public class MeminatorController {
             outputFile = new File(outputFilePath);
 
             // run the convert command
+            span.addEvent(name:"Running conver command", Attributes.builder()
+            .put(key:"app.imageFile", value:"filename")
+            .put(key:"app.phrase", phrase)
+            .put(key:"app.outputFile", outputFilePath)
+            .build());
+
             runConvertCommand(inputFile, phrase, outputFilePath);
 
             // read the output file back into the byte array
